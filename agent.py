@@ -16,21 +16,31 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 # 2. Initialize the LLM
-# llm = ChatGroq(
-#     model="llama-3.3-70b-versatile",
-#     temperature=0
-# )
-llm = ChatOpenAI(
-    model="meta-llama/Llama-3.3-70B-Instruct", 
-    openai_api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
-    base_url="https://router.huggingface.co/v1",
-    temperature=0
-)
-# llm = ChatOllama(
-#     model="qwen3.5:9b",
-#     base_url="http://localhost:11434",
-#     temperature=0
-# )
+def get_llm():
+    provider = os.getenv("MODEL_PROVIDER", "OLLAMA")
+    
+    if provider == "GROQ":
+        return ChatGroq(
+            model=os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile"),
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0
+        )
+    elif provider == "HUGGINGFACE":
+        return ChatOpenAI(
+            model=os.getenv("HUGGINGFACE_MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct"),
+            openai_api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+            base_url=os.getenv("HUGGINGFACE_BASE_URL", "https://router.huggingface.co/v1"),
+            temperature=0
+        )
+    else:
+        return ChatOllama(
+            model=os.getenv("OLLAMA_MODEL_NAME", "qwen3.5:9b"),
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            temperature=0
+        )
+
+# Initialize the chosen LLM
+llm = get_llm()
 
 # 3. Bind tools
 tools = [list_tables, get_schema, execute_query, get_business_rules]
@@ -52,7 +62,7 @@ SYSTEM_PROMPT = """
     2. If `execute_query` fails with a `OperationalError` (e.g., no such column), use `get_schema` on that table again.
     3. Compare your generated query against the table name or column name to find the naming mismatch.
     4. Correct the query and execute again.
-    """
+"""
 
 # 5. Define the reasoning engine
 def call_model(state: State):

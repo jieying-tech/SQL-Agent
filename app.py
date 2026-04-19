@@ -45,7 +45,14 @@ with st.sidebar:
     st.markdown("---")
 
     st.header("Model Details")
-    st.code("Model: qwen3.5:9b\nProvider: Ollama", language="yaml")
+    model_provider = os.getenv("MODEL_PROVIDER", "OLLAMA")
+    if model_provider == "GROQ":
+        model_name = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
+    elif model_provider == "HUGGINGFACE":
+        model_name = os.getenv("HUGGINGFACE_MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct")
+    else:
+        model_name = os.getenv("OLLAMA_MODEL_NAME", "qwen3.5:9b")
+    st.code(f"Model: {model_name}\nProvider: {model_provider}", language="yaml")
 
 st.title("SQL Agent")
 

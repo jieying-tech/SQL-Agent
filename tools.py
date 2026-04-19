@@ -1,13 +1,15 @@
+import os
 from dotenv import load_dotenv
 from langchain_core.tools import tool
 from langchain_community.utilities import SQLDatabase
 from sqlalchemy import create_engine
+import json
 
 # Load environment variables
 load_dotenv()
 
 # Setup the Database Connection
-db_path = "data/ecommerce.db"
+db_path = os.getenv("DATABASE_URL")
 engine = create_engine(f"sqlite:///file:{db_path}?mode=ro&uri=true")
 db = SQLDatabase(engine)
 
@@ -46,23 +48,16 @@ def execute_query(query: str):
             return "Query executed successfully, but returned no results."
         return result
     except Exception as e:
-        return f"Error: {str(e)}. Please check your table/column names and try again."
+        return f"Error: {str(e)}."
     
 @tool
-def get_business_rules(topic: str = None):
+def get_business_rules():
     """
-    Returns business rules for the e-commerce store.
-    Use this before writing the SQL query if the user mentions business metrics like 
-    'revenue', 'VIP customers', or 'active products'.
+    Returns business definitions and formulas.
+    Use this to understand the business rules for metrics like revenue, profit, VIPs, churn, and active products.
     """
-    rules = {
-        "revenue": "Calculated as sum of (Products.price * Order_Items.quantity).",
-        "profit": "Calculated as (revenue - (cost * quantity)), where cost is assumed to be 70% of price.",
-        "vip_customer": "A customer who has spent over $500 in total.",
-        "churned_customer": "A customer whose last order was more than 30 days ago.",
-        "active_product": "A product that has been ordered at least once in the last 30 days."
-    }
-    
-    if topic and topic.lower() in rules:
-        return {topic: rules[topic.lower()]}
-    return rules
+    try:
+        with open("business_rules.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"error": "Business rules file not found."}

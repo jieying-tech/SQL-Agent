@@ -1,9 +1,12 @@
+import os
 from dotenv import load_dotenv
 from typing import Annotated, TypedDict
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from tools import list_tables, get_schema, execute_query, get_business_rules
 
 load_dotenv()
@@ -13,10 +16,21 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 # 2. Initialize the LLM
-llm = ChatGroq(
-    model="llama-3.3-70b-versatile", 
+# llm = ChatGroq(
+#     model="llama-3.3-70b-versatile",
+#     temperature=0
+# )
+llm = ChatOpenAI(
+    model="meta-llama/Llama-3.3-70B-Instruct", 
+    openai_api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+    base_url="https://router.huggingface.co/v1",
     temperature=0
 )
+# llm = ChatOllama(
+#     model="qwen3.5:9b",
+#     base_url="http://localhost:11434",
+#     temperature=0
+# )
 
 # 3. Bind tools
 tools = [list_tables, get_schema, execute_query, get_business_rules]
@@ -24,19 +38,21 @@ llm_with_tools = llm.bind_tools(tools)
 
 # 4. Define the system prompt
 SYSTEM_PROMPT = """
-    You are a Sales Analyst of an e-commerce store.
-    Given an input, create a syntactically correct {dialect} query to run,
-    then look at the results of the query and return the answer. Unless the user
-    specifies a specific number of records they wish to obtain, always limit your
-    query to at most {top_k} results.
-    You have READ-ONLY access to the database. Do not attempt to modify data.
-    Always format currency with a '$' prefix and 2 decimal places.
-    If a business rule is used, show it in your final answer.
+    ### ROLE
+    You are a Data Analyst with READ-ONLY access to an e-commerce SQLite database.
     
-    """.format(
-        dialect="SQLite",
-        top_k=10,
-    )
+    ### RULES
+    1. Always use the exact casing for table and column names as shown in the schema. Even if the user uses lowercase, ensure the query aligns with the schema's defined casing.
+    2. Apply '$' prefix and 2 decimal places only to monetary values such as price, revenue, and profit. Do not apply the '$' or extra decimals to non-monetary values such as counts, ranks, and IDs.
+    3. Limit results to 10 rows unless asked for more.
+    4. You are strictly prohibited from modifying the database.
+    
+    ### ERROR HANDLING & SELF-CORRECTION
+    1. If `execute_query` fails with a `ValueError` (e.g., not found in database), use `list_tables`.
+    2. If `execute_query` fails with a `OperationalError` (e.g., no such column), use `get_schema` on that table again.
+    3. Compare your generated query against the table name or column name to find the naming mismatch.
+    4. Correct the query and execute again.
+    """
 
 # 5. Define the reasoning engine
 def call_model(state: State):

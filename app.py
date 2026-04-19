@@ -1,10 +1,55 @@
+import os
+from dotenv import load_dotenv
 import streamlit as st
+import sqlite3
+import json
 from agent import app
 
-st.set_page_config(page_title="SQL Agent", page_icon="🎵")
+load_dotenv()
+
+def get_table_columns(table_name):
+    try:
+        db_path = os.getenv("DATABASE_URL")
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        conn.close()
+        return columns
+    except Exception as e:
+        return [f"Error loading columns: {e}"]
+
+def load_business_rules():
+    with open("business_rules.json", "r") as f:
+        return json.load(f)
+
+st.set_page_config(page_title="SQL Agent", page_icon="📊")
+
+with st.sidebar:
+    st.header("About the Database")
+    st.markdown("This agent has access to an e-commerce SQLite database.")
+    tables = ["Customers", "Products", "Orders", "Order_Items"]
+    for table in tables:
+        with st.expander(f"{table}"):
+            columns = get_table_columns(table)
+            st.write(", ".join(columns))
+    st.markdown("---")
+
+    st.header("Business Rules")
+    
+    rules = load_business_rules()
+    for rule_name, description in rules.items():
+        display_name = rule_name.replace("_", " ").title()
+        with st.expander(display_name):
+            st.write(description)
+    st.markdown("---")
+
+    st.header("Model Details")
+    st.code("Model: qwen3.5:9b\nProvider: Ollama", language="yaml")
 
 st.title("SQL Agent")
-st.markdown("Ask me anything about the e-commerce data.")
+
+st.markdown("I bridge the gap between natural language and data insights.")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -16,7 +61,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # User input
-if prompt := st.chat_input("Which product has the highest number of orders?"):
+if prompt := st.chat_input("Ask me anything about the e-commerce data"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -26,7 +71,7 @@ if prompt := st.chat_input("Which product has the highest number of orders?"):
         
         with st.spinner("Thinking and Querying Database..."):
             inputs = {"messages": [("user", prompt)]}
-            result = app.invoke(inputs)
+            result = app.invoke(inputs, config={"recursion_limit": 50})
 
             with st.expander("🔍 Show Agent Thought Process"):
                 # Skip the first message (the user prompt) and the last (final answer)
@@ -57,4 +102,4 @@ if prompt := st.chat_input("Which product has the highest number of orders?"):
         message_placeholder.markdown(full_response)
     
     # Persist the assistant's response to the session history
-    st.session_state.messages.append({"role": "assistant", "content": final_message})
+    st.session_state.messages.append({"role": "assistant", "content": full_response})

@@ -5,23 +5,35 @@ import sqlite3
 import json
 from agent import app
 
+# Load environment variables
 load_dotenv()
-
+    
 def get_table_columns(table_name):
+    """
+    Fetches the column names for a specified table using SQLite PRAGMA.
+    Used for displaying schema metadata in the Streamlit sidebar.
+    """
     try:
         db_path = os.getenv("DATABASE_URL")
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
+        # PRAGMA table_info returns (id, name, type, notnull, default_value, pk)
         cursor.execute(f"PRAGMA table_info({table_name})")
         columns = [row[1] for row in cursor.fetchall()]
         conn.close()
         return columns
     except Exception as e:
-        return [f"Error loading columns: {e}"]
-
+        return {"error": f"Error loading columns: {str(e)}"}
+    
 def load_business_rules():
-    with open("business_rules.json", "r") as f:
-        return json.load(f)
+    """
+    Returns business definitions and formulas.
+    """
+    try:
+        with open("data/business_rules.json", "r") as f:
+            return json.load(f)
+    except Exception as e:
+        return {"error": f"Business rules error: {str(e)}"}
 
 st.set_page_config(page_title="SQL Agent", page_icon="📊")
 
@@ -36,7 +48,6 @@ with st.sidebar:
     st.markdown("---")
 
     st.header("Business Rules")
-    
     rules = load_business_rules()
     for rule_name, description in rules.items():
         display_name = rule_name.replace("_", " ").title()
@@ -78,7 +89,7 @@ if prompt := st.chat_input("Ask me anything about the e-commerce data"):
         
         with st.spinner("Thinking and Querying Database..."):
             inputs = {"messages": [("user", prompt)]}
-            result = app.invoke(inputs, config={"recursion_limit": 50})
+            result = app.invoke(inputs, config={"recursion_limit": 25})
 
             with st.expander("🔍 Show Agent Thought Process"):
                 # Skip the first message (the user prompt) and the last (final answer)
@@ -96,7 +107,7 @@ if prompt := st.chat_input("Ask me anything about the e-commerce data"):
                     
                     # Show the raw result from the database (Tool Messages)
                     elif msg.type == "tool":
-                        st.caption("Data retrieved from database:")
+                        st.caption("Data retrieved:")
                         # Truncate long results for UI cleanliness
                         content = str(msg.content)
                         st.text(content[:300] + "..." if len(content) > 300 else content)

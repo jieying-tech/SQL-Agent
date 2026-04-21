@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from tools import list_tables, get_schema, execute_query, get_business_rules
 
+# Load environment variables
 load_dotenv()
 
 # 1. Define the state
@@ -17,6 +18,11 @@ class State(TypedDict):
 
 # 2. Initialize the LLM
 def get_llm():
+    """
+    Initializes and returns the model based on the MODEL_PROVIDER.
+    Supports GROQ, HUGGINGFACE, and OLLAMA (default).
+    Sets temperature to 0 to ensure deterministic output for SQL generation.
+    """
     provider = os.getenv("MODEL_PROVIDER", "OLLAMA")
     
     if provider == "GROQ":
@@ -39,7 +45,6 @@ def get_llm():
             temperature=0
         )
 
-# Initialize the chosen LLM
 llm = get_llm()
 
 # 3. Bind tools
@@ -93,6 +98,7 @@ def should_continue(state: State):
 
 # Define the iterative feedback loop
 workflow.add_conditional_edges("agent", should_continue)
+
 # Return tool results to the agent for analysis
 workflow.add_edge("tools", "agent")
 

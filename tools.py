@@ -39,6 +39,18 @@ def get_schema(table_name: str):
         return {"error": f"Error retrieving schema for '{table_name}': {str(e)}"}
 
 @tool
+def get_business_rules():
+    """
+    Returns business definitions and formulas.
+    Use this to understand the business rules for metrics like revenue, profit, VIPs, churn, and active products.
+    """
+    try:
+        with open("data/business_rules.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"error": "Business rules file not found."}
+    
+@tool
 def execute_query(query: str):
     """
     Executes a SQL query against the database and returns the results.
@@ -66,15 +78,3 @@ def execute_query(query: str):
         return result
     except Exception as e:
         return {"error": f"SQL Error: {str(e)}"}
-    
-@tool
-def get_business_rules():
-    """
-    Returns business definitions and formulas.
-    Use this to understand the business rules for metrics like revenue, profit, VIPs, churn, and active products.
-    """
-    try:
-        with open("data/business_rules.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {"error": "Business rules file not found."}

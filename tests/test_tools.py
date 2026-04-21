@@ -5,10 +5,46 @@ import pytest
 # Adds the parent directory (root) to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from tools import execute_query
+from tools import list_tables, get_schema, get_business_rules, execute_query
 
 
-### Test 1: Successful query with data returned
+### Test list_tables
+
+def test_list_tables_success():
+    result = list_tables.invoke({})
+    assert isinstance(result, list)
+    assert len(result) > 0
+    assert "Customers" in result
+
+
+### Test get_schema
+
+def test_get_schema_success():
+    # Testing with a known valid table
+    result = get_schema.invoke({"table_name": "Customers"})
+    assert isinstance(result, str)
+    assert "CREATE TABLE" in result
+
+def test_get_schema_invalid_table():
+    # Testing the error handling logic we added
+    result = get_schema.invoke({"table_name": "NonExistentTable"})
+    assert isinstance(result, dict)
+    assert "error" in result
+    assert "not found" in result["error"]
+
+
+### Test get_business_rules
+
+def test_get_business_rules_content():
+    result = get_business_rules.invoke({})
+    assert isinstance(result, dict)
+    assert "revenue" in result or "profit" in result
+    assert "error" not in result
+
+
+### Test execute_query
+
+## Test 1: Successful query with data returned
 
 def test_execute_query_returns_data():
     query = "SELECT product_id, name, price, category FROM Products LIMIT 1;"
@@ -18,7 +54,7 @@ def test_execute_query_returns_data():
     assert "returned no results" not in result
 
 
-### Test 2: Successful query with no data returned
+## Test 2: Successful query with no data returned
 
 def test_execute_query_returns_no_data():
     query = "SELECT customer_id FROM Orders WHERE order_id = -999;"
@@ -27,7 +63,7 @@ def test_execute_query_returns_no_data():
     assert "returned no results" in result["message"]
 
 
-### Test 3: Forbidden commands
+## Test 3: Forbidden commands
 
 @pytest.mark.parametrize("forbidden_query", [
     "DROP TABLE Orders;",
@@ -44,7 +80,7 @@ def test_execute_query_forbidden_commands(forbidden_query):
     assert "Forbidden keyword detected" in result["error"]
 
 
-### Test 4: Incorrect table or column name
+## Test 4: Incorrect table or column name
 
 def test_execute_query_incorrect_table():
     query = "SELECT customer_id FROM NonExistentTable"

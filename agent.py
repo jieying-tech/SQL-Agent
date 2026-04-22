@@ -38,6 +38,13 @@ def get_llm():
             base_url=os.getenv("HUGGINGFACE_BASE_URL", "https://router.huggingface.co/v1"),
             temperature=0
         )
+    elif provider == "OPENROUTER":
+        return ChatOpenAI(
+            model=os.getenv("OPENROUTER_MODEL_NAME", "openai/gpt-oss-120b:free"),
+            openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+            base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+            temperature=0
+        )
     else:
         return ChatOllama(
             model=os.getenv("OLLAMA_MODEL_NAME", "qwen3.5:9b"),

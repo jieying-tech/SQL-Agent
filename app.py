@@ -62,6 +62,8 @@ with st.sidebar:
         model_name = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
     elif model_provider == "HUGGINGFACE":
         model_name = os.getenv("HUGGINGFACE_MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct")
+    elif model_provider == "OPENROUTER":
+        model_name = os.getenv("OPENROUTER_MODEL_NAME", "openai/gpt-oss-120b:free")
     else:
         model_name = os.getenv("OLLAMA_MODEL_NAME", "qwen3.5:9b")
     st.code(f"Model: {model_name}\nProvider: {model_provider}", language="yaml")

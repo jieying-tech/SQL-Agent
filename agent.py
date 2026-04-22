@@ -7,7 +7,7 @@ from langgraph.prebuilt import ToolNode
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
-from tools import list_tables, get_schema, execute_query, get_business_rules
+from tools import list_tables, get_schema, execute_query, get_business_rule
 
 # Load environment variables
 load_dotenv()
@@ -48,7 +48,7 @@ def get_llm():
 llm = get_llm()
 
 # 3. Bind tools
-tools = [list_tables, get_schema, execute_query, get_business_rules]
+tools = [list_tables, get_schema, execute_query, get_business_rule]
 llm_with_tools = llm.bind_tools(tools)
 
 # 4. Define the system prompt

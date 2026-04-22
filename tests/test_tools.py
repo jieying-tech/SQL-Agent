@@ -5,7 +5,7 @@ import pytest
 # Adds the parent directory (root) to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from tools import list_tables, get_schema, get_business_rules, execute_query
+from tools import list_tables, get_schema, get_business_rule, execute_query
 
 
 ### Test list_tables
@@ -33,13 +33,23 @@ def test_get_schema_invalid_table():
     assert "not found" in result["error"]
 
 
-### Test get_business_rules
+### Test get_business_rule
 
-def test_get_business_rules_content():
-    result = get_business_rules.invoke({})
-    assert isinstance(result, dict)
-    assert "revenue" in result or "profit" in result
-    assert "error" not in result
+def test_get_business_rule_valid_keyword():
+    result_vip = get_business_rule.invoke({"keyword": "VIP"})
+    assert isinstance(result_vip, dict)
+    assert all("vip" in k.lower() for k in result_vip.keys())
+    assert len(result_vip) > 0
+
+def test_get_business_rule_case_sensitivity():
+    result_caps = get_business_rule.invoke({"keyword": "profit"})
+    result_lower = get_business_rule.invoke({"keyword": "PROFIT"})
+    assert result_caps == result_lower
+
+def test_get_business_rule_invalid_keyword():
+    result_empty = get_business_rule.invoke({"keyword": "non_existent_rule_xyz"})
+    assert isinstance(result_empty, dict)
+    assert len(result_empty) == 0
 
 
 ### Test execute_query

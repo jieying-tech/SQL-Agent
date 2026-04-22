@@ -146,7 +146,7 @@ def test_multi_step_vip_reasoning():
     
     tool_names = [msg.name for msg in messages if msg.type == "tool"]
     
-    assert "get_business_rules" in tool_names, "Agent should check rules to define 'VIP'"
+    assert "get_business_rule" in tool_names, "Agent should check rules to define 'VIP'"
     assert "execute_query" in tool_names, "Agent should run a query"
 
 def test_multi_step_product_profit_reasoning():
@@ -155,7 +155,7 @@ def test_multi_step_product_profit_reasoning():
     
     tool_names = [msg.name for msg in messages if msg.type == "tool"]
 
-    assert "get_business_rules" in tool_names, "Agent should check rules to define 'Profit'"
+    assert "get_business_rule" in tool_names, "Agent should check rules to define 'Profit'"
     assert "execute_query" in tool_names, "Agent should run a query"
 
 def test_multi_step_order_avg_comparison():
@@ -270,7 +270,7 @@ def test_nonexistent_data():
     final_content = result["messages"][-1].content.lower()
     assert any(phrase in final_content for phrase in ["no results", "no orders", "didn't find", "empty"])
 
-def test_nonexistent_business_rules():
+def test_nonexistent_business_rule():
     result = ask_agent("What is the Stockout Rate for our products?")
     final_content = result["messages"][-1].content.lower()
     assert any(phrase in final_content for phrase in ["cannot", "not defined", "no information"])

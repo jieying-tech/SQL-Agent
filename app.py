@@ -14,7 +14,7 @@ def get_table_columns(table_name):
     Used for displaying schema metadata in the Streamlit sidebar.
     """
     try:
-        db_path = os.getenv("DATABASE_URL")
+        db_path = os.getenv("DATABASE_URL", "data/ecommerce.db")
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         # PRAGMA table_info returns (id, name, type, notnull, default_value, pk)
@@ -30,7 +30,8 @@ def load_business_rules():
     Returns business definitions and formulas.
     """
     try:
-        with open("data/business_rules.json", "r") as f:
+        br_path = os.getenv("BUSINESS_RULES_URL", "data/business_rules.json")
+        with open(br_path, "r") as f:
             return json.load(f)
     except Exception as e:
         return {"error": f"Business rules error: {str(e)}"}

@@ -146,32 +146,25 @@ if prompt := st.chat_input("Ask me anything about the e-commerce data"):
             result = app.invoke(inputs, config=config)
 
             with st.expander("🔍 Show Agent Thought Process"):
-                # Skip the first message (the user prompt) and the last message (final answer)
-                process_messages = result["messages"][1:-1]
-                
+                process_messages = result["messages"]
+
                 for msg in process_messages:
-                    # Show what actions the agent decided to take (Tool Calls)
+                    # Show what actions the agent decided to take (tool calls)
                     if hasattr(msg, "tool_calls") and msg.tool_calls:
                         for tool_call in msg.tool_calls:
                             st.write(f"**Step:** Agent decided to use `{tool_call['name']}`")
-                            if "query" in tool_call["args"]:
-                                st.code(tool_call["args"]["query"], language="sql")
-                            elif "table_name" in tool_call["args"]:
-                                st.write(f"Inspecting table: `{tool_call['args']['table_name']}`")
-                    
-                    # Show the raw result from the database (Tool Messages)
+                            st.json(tool_call["args"])
+                    # Show data retrieved (tool messages)
                     elif msg.type == "tool":
                         st.caption("Data retrieved:")
-                        # Truncate long results for UI cleanliness
                         content = str(msg.content)
                         st.text(content[:300] + "..." if len(content) > 300 else content)
 
             # Extract the final response
-            final_message = result["messages"][-1]
-            full_response = final_message.content
+            final_response = result["messages"][-1].content
             
         # Display the final response
-        message_placeholder.markdown(full_response)
+        message_placeholder.markdown(final_response)
     
     # Persist the assistant's response to the session history
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+    st.session_state.messages.append({"role": "assistant", "content": final_response})

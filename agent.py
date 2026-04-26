@@ -8,7 +8,7 @@ from langgraph.prebuilt import ToolNode
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
-from tools import list_tables, get_schema, execute_query, get_business_rule
+from tools import list_tables, get_schema, execute_query, search_business_rule
 
 # Load environment variables
 load_dotenv()
@@ -18,7 +18,7 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 # 2. Define the tools
-tools = [list_tables, get_schema, execute_query, get_business_rule]
+tools = [list_tables, get_schema, execute_query, search_business_rule]
 
 # 3. Cache for LLM instances to avoid re-initialization on every call
 _llm_cache = {}
@@ -92,6 +92,9 @@ SYSTEM_PROMPT = """
     2. Apply '$' prefix and 2 decimal places only to monetary values such as price, revenue, and profit. Do not apply the '$' or extra decimals to non-monetary values such as counts, ranks, and IDs.
     3. Limit results to 10 rows unless asked for more.
     4. You are strictly prohibited from modifying the database.
+
+    ### KNOWLEDGE BASE
+    Use the `search_business_rule` tool whenever the user mentions business terms like "gross margin", "revenue", "profit", "VIPs", "churn", "CLV", "active products", or others.
     
     ### ERROR HANDLING & SELF-CORRECTION
     1. If `execute_query` fails with a `ValueError` (e.g., not found in database), use `list_tables`.

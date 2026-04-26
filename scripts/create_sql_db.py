@@ -1,12 +1,16 @@
 import os
+import sys
 from dotenv import load_dotenv
 import sqlite3
 import random
 from datetime import datetime, timedelta
 
+# Adds the parent directory (root) to the system path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 load_dotenv()
 
-db_path = os.getenv("DATABASE_URL")
+db_path = os.getenv("DATABASE_URL", "data/ecommerce.db")
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
@@ -69,4 +73,5 @@ for i in range(1, 31):
 
 conn.commit()
 conn.close()
-print("E-commerce DB populated")
+
+print("SQL database created")

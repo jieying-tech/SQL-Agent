@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import streamlit as st
 import sqlite3
-import json
+import re
 from agent import app
 
 # Load environment variables
@@ -24,18 +24,27 @@ def get_table_columns(table_name):
         return columns
     except Exception as e:
         return {"error": f"Error loading columns: {str(e)}"}
-    
+
 def load_business_rules():
     """
-    Returns business definitions and formulas.
+    Reads the business rules document.
     """
     try:
-        br_path = os.getenv("BUSINESS_RULES_URL", "data/business_rules.json")
+        br_path = os.getenv("BUSINESS_RULES_URL", "data/business_rules.md")
         with open(br_path, "r") as f:
-            return json.load(f)
+            content = f.read()
+        sections = re.split(r'\n(?=## )', content)
+        rules_dict = {}
+        for section in sections:
+            lines = section.strip().split('\n')
+            if lines:
+                header = lines[0].replace('## ', '').strip()
+                body = '\n'.join(lines[1:]).strip()
+                rules_dict[header] = body
+        return rules_dict
     except Exception as e:
         return {"error": f"Business rules error: {str(e)}"}
-    
+
 st.set_page_config(page_title="SQL Agent", page_icon="📊")
 
 # Initialize session state
@@ -87,11 +96,11 @@ with st.sidebar:
     st.markdown("---")
 
     st.header("Business Rules")
-    rules = load_business_rules()
-    for rule_name, description in rules.items():
-        display_name = rule_name.replace("_", " ").title()
-        with st.expander(display_name):
-            st.write(description)
+    business_rules = load_business_rules()
+    categories = ["Financial Metrics", "Customers", "Products"]
+    for category in categories:
+        with st.expander(category):
+            st.markdown(business_rules[category])
 
 st.title("SQL Agent")
 
@@ -137,7 +146,7 @@ if prompt := st.chat_input("Ask me anything about the e-commerce data"):
             result = app.invoke(inputs, config=config)
 
             with st.expander("🔍 Show Agent Thought Process"):
-                # Skip the first message (the user prompt) and the last (final answer)
+                # Skip the first message (the user prompt) and the last message (final answer)
                 process_messages = result["messages"][1:-1]
                 
                 for msg in process_messages:

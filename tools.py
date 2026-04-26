@@ -1,20 +1,11 @@
-import os
-from dotenv import load_dotenv
 from langchain_core.tools import tool
-from langchain_community.utilities import SQLDatabase
-from sqlalchemy import create_engine
-import json
+from db_clients import get_sql_db, get_vector_db
 
-# Load environment variables
-load_dotenv()
+# Setup the SQL Database
+sql_db = get_sql_db()
 
-# Setup the Database Connection
-db_path = os.getenv("DATABASE_URL", "data/ecommerce.db")
-engine = create_engine(f"sqlite:///file:{db_path}?mode=ro&uri=true")
-db = SQLDatabase(engine)
-
-# Get business rules url
-br_path = os.getenv("BUSINESS_RULES_URL", "data/business_rules.json")
+# Setup the Vector Database
+vector_db = get_vector_db()
 
 @tool
 def list_tables():
@@ -23,7 +14,7 @@ def list_tables():
     Use this to find which tables are relevant to the user's question.
     """
     try:
-        return db.get_usable_table_names()
+        return sql_db.get_usable_table_names()
     except Exception as e:
         return {"error": f"Failed to retrieve table list: {str(e)}"}
 
@@ -34,25 +25,34 @@ def get_schema(table_name: str):
     Use this to understand column names and types before writing a SQL query.
     """
     try:
-        info = db.get_table_info([table_name])
+        info = sql_db.get_table_info([table_name])
         if not info:
             return {"error": f"Table '{table_name}' not found in database."}
         return info
     except Exception as e:
         return {"error": f"Error retrieving schema for '{table_name}': {str(e)}"}
-    
+
 @tool
-def get_business_rule(keyword: str):
+def search_business_rule(query: str):
     """
-    Search for a specific business definition or formula.
-    Use this to understand a business term like revenue, profit, VIPs, churn, and active products.
+    Searches for a specific business definition or formula.
+    Use this to understand a business term like gross margin, revenue, profit, VIPs, churn, CLV, active products, or others.
     """
     try:
-        with open(br_path, "r") as f:
-            rules = json.load(f)
-            return {k: v for k, v in rules.items() if keyword.lower() in k.lower()}
-    except FileNotFoundError:
-        return {"error": "Business rules file not found."}
+        docs_and_scores = vector_db.similarity_search_with_score(query, k=1)
+
+        if not docs_and_scores:
+            return {"message": "No relevant business rules were found."}
+        
+        doc, score = docs_and_scores[0]
+
+        if score > 1.0: 
+            return {"message": "No relevant business rules were found."}
+        
+        return doc.page_content
+    
+    except Exception as e:
+        return {"error": f"Failed to search business rule: {str(e)}"}
     
 @tool
 def execute_query(query: str):
@@ -76,7 +76,7 @@ def execute_query(query: str):
         query = query.rstrip(';') + " LIMIT 50;"
 
     try:
-        result = db.run(query)
+        result = sql_db.run(query)
         if not result:
             return {"message": "Query executed successfully, but returned no results."}
         return result

@@ -1,5 +1,3 @@
-# SQL-Agent
-
 <div align="center">
   <h2 align="center">LLM-Powered SQL Agent with RAG</h2>
   <p align="center">

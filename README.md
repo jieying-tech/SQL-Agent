@@ -10,7 +10,7 @@ An LLM-powered AI agent that combines SQL database querying with RAG-based busin
 
 <h4 id="demo">Demo</h4>
 
-Live app: https://sql-agent-app-tm0ynq.streamlit.app/
+Live app: https://sql-agent-rag.streamlit.app/
 
 <h4 id="built-with">Built with</h4>
 
